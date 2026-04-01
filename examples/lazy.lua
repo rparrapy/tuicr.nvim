@@ -21,7 +21,7 @@ return {
     opts = {
       close_on_exit = true,
       export_on_close = true,
-      close_fallback_ms = 1500,
+      force_close_timeout_ms = nil,
       win = {
         style = "float",
         border = "rounded",

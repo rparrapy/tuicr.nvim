@@ -53,7 +53,7 @@ cargo install tuicr
   opts = {
     close_on_exit = true,
     export_on_close = true,
-    close_fallback_ms = 1500,
+    force_close_timeout_ms = nil,
     win = {
       style = "float",
       border = "rounded",
@@ -93,7 +93,7 @@ require("tuicr").setup({
   auto_insert = true,
   close_on_exit = false,
   export_on_close = true,
-  close_fallback_ms = 1500,
+  force_close_timeout_ms = nil,
   cwd = nil,
   args = {},
   env = {},
@@ -144,5 +144,7 @@ This verifies:
 - `q` closes the wrapper by default only in normal mode, so it won't hijack `tuicr`'s own `q` inside terminal mode
 - `<C-q>` closes from normal or terminal mode
 - Closing through the wrapper runs `:clip` and then `:x` by default; disable with `export_on_close = false`
+- The plugin now waits for `tuicr` to finish its own quit flow, including confirmation dialogs
+- If you really want a forced fallback kill, set `force_close_timeout_ms = 1500` (or another timeout)
 - In terminal mode, use `<Esc><Esc>` to leave terminal insert mode
 - If you want `tuicr` in a split instead of a float, set `win.style = "split"` or `"vsplit"`

@@ -235,6 +235,19 @@ local function close_sequence(opts)
   return ":x\r"
 end
 
+local function schedule_force_close(timeout_ms)
+  local timeout = tonumber(timeout_ms)
+  if not timeout or timeout <= 0 then
+    return
+  end
+
+  vim.defer_fn(function()
+    if M.state.job then
+      pcall(vim.fn.jobstop, M.state.job)
+    end
+  end, timeout)
+end
+
 function M.close(force)
   local opts = config.get()
 
@@ -251,12 +264,7 @@ function M.close(force)
   end
 
   pcall(vim.fn.chansend, M.state.job, close_sequence(opts))
-
-  vim.defer_fn(function()
-    if M.state.job then
-      pcall(vim.fn.jobstop, M.state.job)
-    end
-  end, tonumber(opts.close_fallback_ms) or 1500)
+  schedule_force_close(opts.force_close_timeout_ms)
 end
 
 function M.open(extra)
