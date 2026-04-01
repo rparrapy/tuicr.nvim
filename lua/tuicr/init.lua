@@ -228,8 +228,18 @@ function M.is_open()
 end
 
 local function close_sequence(opts)
-  if opts.export_on_close then
+  local strategy = opts.close_strategy or "clip_then_quit"
+
+  if strategy == "clip_then_quit" then
+    return ":clip\r:q!\r"
+  end
+
+  if strategy == "clip_then_x" then
     return ":clip\r:x\r"
+  end
+
+  if strategy == "quit" then
+    return ":q!\r"
   end
 
   return ":x\r"

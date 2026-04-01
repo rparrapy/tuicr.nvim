@@ -20,7 +20,7 @@ return {
     },
     opts = {
       close_on_exit = true,
-      export_on_close = true,
+      close_strategy = "clip_then_quit",
       force_close_timeout_ms = nil,
       win = {
         style = "float",

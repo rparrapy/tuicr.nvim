@@ -9,7 +9,7 @@ A small [lazy.nvim](https://github.com/folke/lazy.nvim) plugin that runs [tuicr]
 - Detects the current repo root from `.git`, `.jj`, or `.hg`
 - Supports passing raw `tuicr` CLI arguments
 - Configurable terminal keymaps for close / leave-terminal-mode actions
-- Optional review export-to-clipboard when closing from the wrapper
+- Configurable close strategies, including export-then-quit with no prompt
 - Includes `:checkhealth tuicr` integration
 - Simple Lua API and `:Tuicr` / `:TuicrToggle` commands
 
@@ -52,7 +52,7 @@ cargo install tuicr
   },
   opts = {
     close_on_exit = true,
-    export_on_close = true,
+    close_strategy = "clip_then_quit",
     force_close_timeout_ms = nil,
     win = {
       style = "float",
@@ -92,7 +92,7 @@ require("tuicr").setup({
   bin = "tuicr",
   auto_insert = true,
   close_on_exit = false,
-  export_on_close = true,
+  close_strategy = "clip_then_quit",
   force_close_timeout_ms = nil,
   cwd = nil,
   args = {},
@@ -143,8 +143,9 @@ This verifies:
 
 - `q` closes the wrapper by default only in normal mode, so it won't hijack `tuicr`'s own `q` inside terminal mode
 - `<C-q>` closes from normal or terminal mode
-- Closing through the wrapper runs `:clip` and then `:x` by default; disable with `export_on_close = false`
-- The plugin now waits for `tuicr` to finish its own quit flow, including confirmation dialogs
+- Default wrapper close behavior is `close_strategy = "clip_then_quit"`, which runs `:clip` and then `:q!` to avoid the confirmation prompt
+- Other supported values are `"clip_then_x"`, `"x"`, and `"quit"`
+- `"clip_then_x"` keeps tuicr's normal quit flow and may still show confirmation dialogs
 - If you really want a forced fallback kill, set `force_close_timeout_ms = 1500` (or another timeout)
 - In terminal mode, use `<Esc><Esc>` to leave terminal insert mode
 - If you want `tuicr` in a split instead of a float, set `win.style = "split"` or `"vsplit"`
