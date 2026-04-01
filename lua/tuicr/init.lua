@@ -6,6 +6,7 @@ local M = {
     win = nil,
     job = nil,
     tab = nil,
+    closing = false,
   },
 }
 
@@ -79,16 +80,31 @@ local function cleanup_window(keep_buf)
   end
 end
 
+local function should_notify_exit(code)
+  if code == 0 then
+    return false
+  end
+
+  if M.state.closing and (code == 129 or code == 143) then
+    return false
+  end
+
+  return true
+end
+
 local function on_exit(_, code)
   vim.schedule(function()
     M.state.job = nil
-    if code ~= 0 then
+
+    if should_notify_exit(code) then
       notify(string.format("tuicr exited with code %d", code), vim.log.levels.WARN)
     end
 
-    if config.get().close_on_exit then
+    if M.state.closing or config.get().close_on_exit then
       cleanup_window(false)
     end
+
+    M.state.closing = false
   end)
 end
 
@@ -157,30 +173,52 @@ local function apply_window_options(win, buf, win_opts)
   vim.bo[buf].modifiable = false
 end
 
+local function normalize_keymap(mapping)
+  if type(mapping) == "string" then
+    return { action = mapping, mode = { "n", "t" } }
+  end
+
+  if type(mapping) == "function" then
+    return { action = mapping, mode = { "n", "t" } }
+  end
+
+  if type(mapping) == "table" then
+    local mode = mapping.mode or { "n", "t" }
+    return {
+      action = mapping.action or mapping[1],
+      mode = mode,
+    }
+  end
+end
+
 local function set_terminal_keymaps(buf, keymaps)
-  for lhs, action in pairs(keymaps or {}) do
-    if action == "normal_mode" then
-      vim.keymap.set("t", lhs, [[<C-\\><C-n>]], {
-        buffer = buf,
-        silent = true,
-        desc = "Leave terminal mode",
-      })
-    elseif action == "close" then
-      vim.keymap.set({ "n", "t" }, lhs, function()
-        M.close()
-      end, {
-        buffer = buf,
-        silent = true,
-        nowait = true,
-        desc = "Close tuicr window",
-      })
-    elseif type(action) == "function" then
-      vim.keymap.set({ "n", "t" }, lhs, action, {
-        buffer = buf,
-        silent = true,
-        nowait = true,
-        desc = "tuicr custom keymap",
-      })
+  for lhs, raw_mapping in pairs(keymaps or {}) do
+    local mapping = normalize_keymap(raw_mapping)
+
+    if mapping then
+      if mapping.action == "normal_mode" then
+        vim.keymap.set(mapping.mode, lhs, [[<C-\\><C-n>]], {
+          buffer = buf,
+          silent = true,
+          desc = "Leave terminal mode",
+        })
+      elseif mapping.action == "close" then
+        vim.keymap.set(mapping.mode, lhs, function()
+          M.close()
+        end, {
+          buffer = buf,
+          silent = true,
+          nowait = true,
+          desc = "Close tuicr window",
+        })
+      elseif type(mapping.action) == "function" then
+        vim.keymap.set(mapping.mode, lhs, mapping.action, {
+          buffer = buf,
+          silent = true,
+          nowait = true,
+          desc = "tuicr custom keymap",
+        })
+      end
     end
   end
 end
@@ -189,13 +227,36 @@ function M.is_open()
   return valid_window()
 end
 
-function M.close()
-  if M.state.job then
-    pcall(vim.fn.jobstop, M.state.job)
-    M.state.job = nil
+local function close_sequence(opts)
+  if opts.export_on_close then
+    return ":clip\r:x\r"
   end
 
-  cleanup_window(false)
+  return ":x\r"
+end
+
+function M.close(force)
+  local opts = config.get()
+
+  if not M.state.job then
+    cleanup_window(false)
+    return
+  end
+
+  M.state.closing = true
+
+  if force then
+    pcall(vim.fn.jobstop, M.state.job)
+    return
+  end
+
+  pcall(vim.fn.chansend, M.state.job, close_sequence(opts))
+
+  vim.defer_fn(function()
+    if M.state.job then
+      pcall(vim.fn.jobstop, M.state.job)
+    end
+  end, tonumber(opts.close_fallback_ms) or 1500)
 end
 
 function M.open(extra)

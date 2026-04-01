@@ -4,13 +4,15 @@ local defaults = {
   bin = "tuicr",
   auto_insert = true,
   close_on_exit = false,
+  export_on_close = true,
+  close_fallback_ms = 1500,
   cwd = nil,
   args = {},
   env = {},
   keymaps = {
-    q = "close",
-    ["<C-q>"] = "close",
-    ["<Esc><Esc>"] = "normal_mode",
+    q = { action = "close", mode = "n" },
+    ["<C-q>"] = { action = "close", mode = { "n", "t" } },
+    ["<Esc><Esc>"] = { action = "normal_mode", mode = "t" },
   },
   win = {
     style = "float",

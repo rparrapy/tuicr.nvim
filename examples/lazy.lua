@@ -20,6 +20,8 @@ return {
     },
     opts = {
       close_on_exit = true,
+      export_on_close = true,
+      close_fallback_ms = 1500,
       win = {
         style = "float",
         border = "rounded",
@@ -30,9 +32,9 @@ return {
         title_pos = "center",
       },
       keymaps = {
-        q = "close",
-        ["<C-q>"] = "close",
-        ["<Esc><Esc>"] = "normal_mode",
+        q = { action = "close", mode = "n" },
+        ["<C-q>"] = { action = "close", mode = { "n", "t" } },
+        ["<Esc><Esc>"] = { action = "normal_mode", mode = "t" },
       },
     },
   },

@@ -9,6 +9,7 @@ A small [lazy.nvim](https://github.com/folke/lazy.nvim) plugin that runs [tuicr]
 - Detects the current repo root from `.git`, `.jj`, or `.hg`
 - Supports passing raw `tuicr` CLI arguments
 - Configurable terminal keymaps for close / leave-terminal-mode actions
+- Optional review export-to-clipboard when closing from the wrapper
 - Includes `:checkhealth tuicr` integration
 - Simple Lua API and `:Tuicr` / `:TuicrToggle` commands
 
@@ -51,6 +52,8 @@ cargo install tuicr
   },
   opts = {
     close_on_exit = true,
+    export_on_close = true,
+    close_fallback_ms = 1500,
     win = {
       style = "float",
       border = "rounded",
@@ -61,9 +64,9 @@ cargo install tuicr
       title_pos = "center",
     },
     keymaps = {
-      q = "close",
-      ["<C-q>"] = "close",
-      ["<Esc><Esc>"] = "normal_mode",
+      q = { action = "close", mode = "n" },
+      ["<C-q>"] = { action = "close", mode = { "n", "t" } },
+      ["<Esc><Esc>"] = { action = "normal_mode", mode = "t" },
     },
   },
 }
@@ -89,13 +92,15 @@ require("tuicr").setup({
   bin = "tuicr",
   auto_insert = true,
   close_on_exit = false,
+  export_on_close = true,
+  close_fallback_ms = 1500,
   cwd = nil,
   args = {},
   env = {},
   keymaps = {
-    q = "close",
-    ["<C-q>"] = "close",
-    ["<Esc><Esc>"] = "normal_mode",
+    q = { action = "close", mode = "n" },
+    ["<C-q>"] = { action = "close", mode = { "n", "t" } },
+    ["<Esc><Esc>"] = { action = "normal_mode", mode = "t" },
   },
   win = {
     style = "float", -- float | split | vsplit | tab
@@ -136,7 +141,8 @@ This verifies:
 
 ## Notes
 
-- `q` closes the Neovim window that hosts `tuicr` by default
-- `<C-q>` also closes it by default from normal or terminal mode
+- `q` closes the wrapper by default only in normal mode, so it won't hijack `tuicr`'s own `q` inside terminal mode
+- `<C-q>` closes from normal or terminal mode
+- Closing through the wrapper runs `:clip` and then `:x` by default; disable with `export_on_close = false`
 - In terminal mode, use `<Esc><Esc>` to leave terminal insert mode
 - If you want `tuicr` in a split instead of a float, set `win.style = "split"` or `"vsplit"`
